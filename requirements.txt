@@ -1,0 +1,2 @@
+# Standart kütüphaneler dışında bağımlılık yoktur.
+# Sistem paketleri için README'ye bakınız veya script eksik paket bulunması durumunda size bildirecektir.
