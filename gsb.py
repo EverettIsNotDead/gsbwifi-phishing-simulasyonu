@@ -275,7 +275,7 @@ def run():
             if any(x in line.lower() for x in ["disconn", "disassoc", "deauth", "expired", "removed"]):
                 if mac in active_clients:
                     active_clients.remove(mac)
-                    safe_print(f"{RED}[- ] BAĞLANTI KESİLDİ: {mac}{NC}")
+                    safe_print(f"{RED}[-] BAĞLANTI KESİLDİ: {mac}{NC}")
             elif any(x in line.lower() for x in ["assoc", "auth", "connected", "dhcpack"]):
                 if "dis" not in line.lower() and mac not in active_clients:
                     active_clients.add(mac)
