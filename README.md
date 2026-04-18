@@ -26,6 +26,10 @@ Bu aşamada sistem, kurbanın internete çıkışını sağlayan kaynak arayüz 
 
 **Evil Twin saldırısı** bu aşamada gerçekleşir.
 
+![Saldırı Trafiği](portal_files/resources/images/saldırı_trafigi.png)
+
+Bu yazılım deauth (ağdan düşürme) saldırısı yapmaz, ancak görselde belirtildiği gibi gerçek ağa deauth saldırısı yapılması başarı şansını arttırır.
+
 ---
 
 ### 2. Captive Portal Yönlendirmesi
