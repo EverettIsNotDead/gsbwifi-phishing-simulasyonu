@@ -8,7 +8,7 @@ Yazılımın gerçek kişisel bilgileri ve şifreleri ele geçirmek, ağın ilet
 
 # GSB-WIFI Phishing Saldırısı Simülasyon Aracı
 
-Bu proje, halka açık Captive Portal (GSBWIFI) ağ yapılarındaki güvenlik açıklarını analiz etmek ve kullanıcı farkındalığını test etmek amacıyla geliştirilmiş, uçtan uca otomatize edilmiş bir **Evil Twin saldırı simülasyon aracıdır**.
+Bu proje, halka açık internet ağlarındaki (GSBWIFI) sosyal mühendislik saldırılarını analiz etmek ve kullanıcı farkındalığını test etmek amacıyla geliştirilmiş, uçtan uca otomatize edilmiş bir **Evil Twin ve Phishing saldırı simülasyon aracıdır**.
 
 ![Örnek Terminal Çıktısı](portal_files/resources/images/screenshot.png)
 
