@@ -73,7 +73,7 @@ Script, sistemde gerekli bağımlılıkların varlığını otomatik olarak kont
 * `dnsmasq` → DHCP ve DNS konfigürasyonu
 * `python3` → Ana kontrol ve watcher
 
-### Kurulum
+### Kurulum ve Hızlı Kullanım
 
 ```bash
 git clone https://github.com/EverettIsNotDead/gsbwifi-phishing-simulasyonu
@@ -113,7 +113,7 @@ Operasyon sırasında üretilen veriler:
 * **Sistem logları:** `./gsb_activity.log`
 * **Toplanan veriler:** `/etc/nodogsplash/passwords.txt`
 
-adreslerine loglanır.
+adreslerine loglanır, beklenmedik bir hata durumda veriler kaybedilmez.
 
 ---
 
