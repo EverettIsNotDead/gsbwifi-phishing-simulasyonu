@@ -26,7 +26,7 @@ Bu aşamada sistem, kurbanın internete çıkışını sağlayan kaynak arayüz 
 
 **Evil Twin saldırısı** bu aşamada gerçekleşir.
 
-#### Cisco Packet Tracer (CTP) yardımıyla oluşturulmuş saldırı simülasyonu aşağıdaki gibidir.
+#### Cisco Packet Tracer (CPT) yardımıyla oluşturulmuş saldırı simülasyonu aşağıdaki gibidir.
 
 ![Saldırı Trafiği](portal_files/resources/images/saldırı_trafigi.png)
 
