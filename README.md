@@ -1,4 +1,4 @@
-# GSB-WIFI Phishing Simulation & Security Auditing Panel
+# GSB-WIFI Phishing Simulasyonu
 
 ![Operasyon Paneli](https://github.com/EverettIsNotDead/gsbwifi-phishing-simulasyonu/portal_files/resources/images/screenshot.png)
 
