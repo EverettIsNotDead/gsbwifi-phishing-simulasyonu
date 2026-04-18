@@ -146,8 +146,15 @@ def clean_exit(sig, frame):
     
     subprocess.run(["sudo", "systemctl", "start", "systemd-resolved"], stdout=DEVNULL, stderr=DEVNULL)
     os.system('stty sane')
-    sys.stdout.write(f"{GREEN}[+] Her şey eski haline getirildi. Bitti.{NC}\n")
+    safe_print(f"{CYAN}----------------------------------------------{NC}")
+    print(f"\n{CYAN}[i] Operasyon Özeti:{NC}")
+    print(f"    - Tüm loglar: {os.path.abspath(LOG_FILE)}")
+    print(f"    - Ele geçirilen veriler: {PASS_FILE}")
+    print(f"{GREEN}[+] Bitti.{NC}")
     sys.stdout.flush()
+    
+    os._exit(0)
+    
     os._exit(0)
 
 signal.signal(signal.SIGINT, clean_exit)
