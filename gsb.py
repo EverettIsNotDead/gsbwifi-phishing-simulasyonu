@@ -118,7 +118,7 @@ def setup_html_gateway_fix():
         gateway = match.group(1) if match else "192.168.12.1"
         splash_file = os.path.join(NDS_HTDOCS, "splash.html")
         if os.path.exists(splash_file):
-            sed_cmd = f"sudo sed -i -E 's/192\.168\.[0-9]+\.[0-9]+/{gateway}/g' {splash_file}"
+            sed_cmd = r"sudo sed -i -E 's/192\.168\.[0-9]+\.[0-9]+/{gateway}/g' " + splash_file
             subprocess.run(sed_cmd, shell=True)
             safe_print(f"[*] Portal Gateway Fix: {CYAN}{gateway}{NC}")
     except: pass
