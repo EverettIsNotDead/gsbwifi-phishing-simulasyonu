@@ -20,7 +20,7 @@ Bu aşamada sistem, kurbanın internete çıkışını sağlayan kaynak arayüz 
 
 ### 2. Captive Portal Yönlendirmesi
 
-'nodogsplash' motoru kullanılarak client cihazın türüne ve işletim sistemine uyumlu olarak sahte captive portal yönlendirmesi yapılır.
+`nodogsplash` motoru kullanılarak client cihazın türüne ve işletim sistemine uyumlu olarak sahte captive portal yönlendirmesi yapılır.
 
 **Phishing saldırısı** katmanı burada kurulur.
 
