@@ -119,15 +119,22 @@ EmptyRuleSetPolicy users-to-router block
 
 def setup_html_gateway_fix():
     try:
+        # Gateway IP'sini bul
         output = subprocess.check_output(["ip", "-4", "addr", "show"], text=True)
         match = re.search(r"inet (192\.168\.[0-9]+\.[0-9]+)", output)
         gateway = match.group(1) if match else "192.168.12.1"
+        
         splash_file = os.path.join(NDS_HTDOCS, "splash.html")
+        
         if os.path.exists(splash_file):
-            sed_cmd = r"sudo sed -i -E 's/192\.168\.[0-9]+\.[0-9]+/{gateway}/g' " + splash_file
-            subprocess.run(sed_cmd, shell=True)
+            # f-string yerine manuel birleştirme yaparak Python'ın kafasını karıştırmıyoruz
+            # sed komutu içindeki {gateway} artık gerçek IP ile yer değiştirecek
+            sed_pattern = "s/192\.168\.[0-9]+\.[0-9]+/" + gateway + "/g"
+            subprocess.run(["sudo", "sed", "-i", "-E", sed_pattern, splash_file], check=True)
+            
             safe_print(f"[*] Portal Gateway Fix: {CYAN}{gateway}{NC}")
-    except: pass
+    except Exception as e:
+        safe_print(f"{RED}[!] Gateway Fix Hatası: {e}{NC}")
 
 def clean_exit(sig, frame):
     sys.stdout.write(f"\r\033[K{YELLOW}[!] Çıkılıyor...{NC}\n")
