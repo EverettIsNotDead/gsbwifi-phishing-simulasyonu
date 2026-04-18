@@ -62,7 +62,7 @@ def check_dependencies():
         print(f"  3. GitHub üzerinden manuel kurulum için her aracın kendi dökümantasyonuna bakın.")
         sys.exit(1)
 
-# --- OTOMATIK PORTAL VE CONFIG KURULUMU ---
+ --- OTOMATIK PORTAL VE CONFIG KURULUMU ---
 def setup_portal_files():
     if not os.path.exists(LOCAL_PORTAL):
         print(f"{RED}[!] HATA: '{LOCAL_PORTAL}' klasörü bulunamadı!{NC}")
@@ -74,7 +74,6 @@ def setup_portal_files():
 
 def setup_nds_config(interface, gateway_ip="192.168.12.1"):
     nds_config_template = f"""
-# GSB-WIFI Phishing Simulation Config
 GatewayInterface {interface}
 GatewayAddress {gateway_ip}
 MaxClients 250
@@ -119,7 +118,6 @@ EmptyRuleSetPolicy users-to-router block
 
 def setup_html_gateway_fix():
     try:
-        # Gateway IP'sini bul
         output = subprocess.check_output(["ip", "-4", "addr", "show"], text=True)
         match = re.search(r"inet (192\.168\.[0-9]+\.[0-9]+)", output)
         gateway = match.group(1) if match else "192.168.12.1"
@@ -127,8 +125,6 @@ def setup_html_gateway_fix():
         splash_file = os.path.join(NDS_HTDOCS, "splash.html")
         
         if os.path.exists(splash_file):
-            # f-string yerine manuel birleştirme yaparak Python'ın kafasını karıştırmıyoruz
-            # sed komutu içindeki {gateway} artık gerçek IP ile yer değiştirecek
             sed_pattern = "s/192\.168\.[0-9]+\.[0-9]+/" + gateway + "/g"
             subprocess.run(["sudo", "sed", "-i", "-E", sed_pattern, splash_file], check=True)
             
