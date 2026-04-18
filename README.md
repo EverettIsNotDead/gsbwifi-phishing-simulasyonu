@@ -32,6 +32,8 @@ Bu aşamada sistem, kurbanın internete çıkışını sağlayan kaynak arayüz 
 
 Hazırlanan `splash.html`, gerçek GSBWIFI giriş ekranının CSS ve JS davranışlarını birebir taklit eder.
 
+![Sahte Portal](portal_files/resources/images/portal.png)
+
 Script, her açılışta Portal içindeki tüm yönlendirme linklerini ve API endpointlerini o anki **Gateway IP adresine göre dinamik olarak günceller**.
 
 Bu sayede 404 hataları ve Timeout problemleri tamamen engellenir.
