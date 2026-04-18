@@ -2,6 +2,8 @@
 
 Bu proje, halka açık Captive Portal (GSBWIFI) ağ yapılarındaki güvenlik açıklarını analiz etmek ve kullanıcı farkındalığını test etmek amacıyla geliştirilmiş, uçtan uca otomatize edilmiş bir **Evil Twin saldırı simülasyon aracıdır**.
 
+![Örnek Terminal Çıktısı](portal_files/resources/images/screenshot.png)
+
 ---
 
 ## Teknik Çalışma Prensibi ve Arkaplan Mimarisi
