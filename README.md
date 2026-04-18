@@ -2,7 +2,7 @@
 
 ![Operasyon Paneli](https://github.com/EverettIsNotDead/gsbwifi-phishing-simulasyonu/portal_files/resources/images/screenshot.png)
 
-Bu proje, halka açık Captive Portal (GSBWIFI) ağ yapılarındaki güvenlik açıklarını analiz etmek ve kullanıcı farkındalığını test etmek amacıyla geliştirilmiş, uçtan uca otomatize edilmiş bir **Evil Twin** saldırı simülasyon aracıdır.
+Bu proje, halka açık Captive Portal (GSBWIFI) ağ yapılarındaki güvenlik açıklarını analiz etmek ve kullanıcı farkındalığını test etmek amacıyla geliştirilmiş, uçtan uca otomatize edilmiş bir **Evil Twin** ve **Phishing** saldırı simülasyon aracıdır.
 
 ## 🧠 Teknik Çalışma Prensibi
 
