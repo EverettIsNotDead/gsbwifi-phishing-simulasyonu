@@ -51,15 +51,16 @@ def check_dependencies():
         check = subprocess.run(["which", pkg], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if check.returncode != 0:
             missing.append(pkg)
+    
     if missing:
-    print(f"{RED}[!] HATA: Sistemde gerekli araçlar bulunamadı: {', '.join(missing)}{NC}")
-    print(f"{YELLOW}[*] Çözüm Yolları:{NC}")
-    print(f"  1. Paket yöneticisi ile kurmayı deneyin:")
-    print(f"     sudo apt update && sudo apt install create_ap nodogsplash dnsmasq")
-    print(f"  2. Eğer araçları manuel kurduysanız, /usr/bin veya /usr/sbin altında")
-    print(f"     olduklarından ve isimlerinin doğru olduğundan emin olun.")
-    print(f"  3. GitHub üzerinden manuel kurulum için her aracın kendi dökümantasyonuna bakın.")
-    sys.exit(1)
+        print(f"{RED}[!] HATA: Sistemde gerekli araçlar bulunamadı: {', '.join(missing)}{NC}")
+        print(f"{YELLOW}[*] Çözüm Yolları:{NC}")
+        print(f"  1. Paket yöneticisi ile kurmayı deneyin:")
+        print(f"     sudo apt update && sudo apt install create_ap nodogsplash dnsmasq")
+        print(f"  2. Eğer araçları manuel kurduysanız, /usr/bin veya /usr/sbin altında")
+        print(f"     olduklarından ve isimlerinin doğru olduğundan emin olun.")
+        print(f"  3. GitHub üzerinden manuel kurulum için her aracın kendi dökümantasyonuna bakın.")
+        sys.exit(1)
 
 # --- OTOMATIK PORTAL VE CONFIG KURULUMU ---
 def setup_portal_files():
