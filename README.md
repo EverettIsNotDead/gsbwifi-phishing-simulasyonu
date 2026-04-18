@@ -1,3 +1,11 @@
+# ⚠️ Yasal Uyarı
+
+Bu yazılım sadece etik hackerlık ve sızma testi simulasyonları oluşturmak, sosyal mühendislik çalışmalarının arkaplanını öğrenmek ve toplumda phishing saldırılarına karşı farkındalık uyandırılması amacıyla geliştirilmiştir.
+
+Yazılımın gerçek kişisel bilgileri ve şifreleri ele geçirmek, ağın iletişimini bozmak veya ağa bağlanmayı zorlaştırmak gibi ve benzeri herhangi bir sebeple kullanımı **suçtur** ve **tüm sorumluluk son kullanıcıya aittir**.
+
+---
+
 # GSB-WIFI Phishing Saldırısı Simülasyon Aracı
 
 Bu proje, halka açık Captive Portal (GSBWIFI) ağ yapılarındaki güvenlik açıklarını analiz etmek ve kullanıcı farkındalığını test etmek amacıyla geliştirilmiş, uçtan uca otomatize edilmiş bir **Evil Twin saldırı simülasyon aracıdır**.
@@ -102,14 +110,6 @@ Operasyon sırasında üretilen veriler:
 * **Toplanan veriler:** `/etc/nodogsplash/passwords.txt`
 
 adreslerine loglanır.
-
----
-
-## ⚠️ Yasal Uyarı
-
-Bu yazılım sadece etik hackerlık ve sızma testi simulasyonları oluşturmak, sosyal mühendislik çalışmalarının arkaplanını öğrenmek ve toplumda phishing saldırılarına karşı farkındalık uyandırılması amacıyla geliştirilmiştir.
-
-Yazılımın gerçek kişisel bilgileri ve şifreleri ele geçirmek, ağın iletişimini bozmak veya ağa bağlanmayı zorlaştırmak gibi ve benzeri herhangi bir sebeple kullanımı **suçtur** ve **tüm sorumluluk son kullanıcıya aittir**.
 
 ---
 
