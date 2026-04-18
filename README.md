@@ -64,6 +64,8 @@ Arkaplanda asenkron çalışan `logger.py` servisi, portal üzerinden gönderile
 
 ## Kurulum ve Bağımlılıklar
 
+**Scriptin düzgün çalışabilmesi için harici bir wifi kartına ihtiyaç duymasılınız, kartlarınızdan en az bir tanesi AP modu desteklemelidir, bu kontrol script içerisinde otomatik olarak yapılır.**
+
 Script, sistemde gerekli bağımlılıkların varlığını otomatik olarak kontrol eder.
 
 ### Gereksinimler
