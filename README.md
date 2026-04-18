@@ -26,9 +26,11 @@ Bu aşamada sistem, kurbanın internete çıkışını sağlayan kaynak arayüz 
 
 **Evil Twin saldırısı** bu aşamada gerçekleşir.
 
+#### Cisco Packet Tracer (CTP) yardımıyla oluşturulmuş saldırı simülasyonu aşağıdaki gibidir.
+
 ![Saldırı Trafiği](portal_files/resources/images/saldırı_trafigi.png)
 
-Bu yazılım deauth (ağdan düşürme) saldırısı yapmaz, ancak görselde belirtildiği gibi gerçek ağa deauth saldırısı yapılması başarı şansını arttırır.
+Bu yazılım **deauth (ağdan düşürme) saldırısı yapmaz**, ancak görselde belirtildiği gibi gerçek ağa deauth saldırısı yapılması başarı şansını arttırır.
 
 ---
 
@@ -47,8 +49,6 @@ Hazırlanan `splash.html`, gerçek GSBWIFI giriş ekranının CSS ve JS davranı
 ![Sahte Portal](portal_files/resources/images/portal.jpeg)
 
 Script, her açılışta Portal içindeki tüm yönlendirme linklerini ve API endpointlerini o anki **Gateway IP adresine göre dinamik olarak günceller**.
-
-Bu sayede 404 hataları ve Timeout problemleri tamamen engellenir.
 
 ---
 
