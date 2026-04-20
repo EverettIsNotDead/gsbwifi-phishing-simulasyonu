@@ -22,7 +22,7 @@ Sistem, sadece bir ağ yayını yapmanın ötesinde, arkaplanda entegre çalış
 
 `create_ap` servisi kullanılarak hedef ağ ile aynı SSID (**GSBWIFI**) üzerinden bir yayın açılır, kurban cihazlar bu **sahte ağa otomatik bağlanır**.
 
-Bu aşamada sistem, kurbanın internete çıkışını sağlayan kaynak arayüz ile yayın yapan arayüz arasında bir **NAT (Network Address Translation)** köprüsü kurar. AP oluşturma özelliğine sahip harici bir wifi chipset kullanımı şiddetle önerilir.
+Bu aşamada sistem, kurbanın internete çıkışını sağlayan kaynak arayüz ile yayın yapan arayüz arasında bir **NAT (Network Address Translation)** köprüsü kurar. AP oluşturma özelliğine sahip harici bir wifi chipset kullanımı gereklidir. Yazılım, saldırgan cihazın sahte ağa bağlanmasını önleyerek **self-phishing** önlemi alır.
 
 **Evil Twin saldırısı** bu aşamada gerçekleşir.
 
