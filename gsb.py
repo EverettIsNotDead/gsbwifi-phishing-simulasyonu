@@ -1,4 +1,3 @@
-cat gsb.py
 import subprocess
 import os
 import time
